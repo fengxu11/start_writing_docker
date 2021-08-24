@@ -53,4 +53,4 @@ key        msqid      owner      perms      used-bytes   messages
 
 ```
 
-> 3. 可以看到、隔离后的环境下是看不到 宿主机上面创建的MQ的
+> 3. 可以看到、隔离后的环境下是看不到 宿主机上面创建的MQ的、由此可以看出IPC已经被隔离
