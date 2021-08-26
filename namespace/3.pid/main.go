@@ -11,7 +11,7 @@ func main() {
 
 	cmd := exec.Command("sh")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWPID,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID,
 	}
 
 	cmd.Stdin = os.Stdin

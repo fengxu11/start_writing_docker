@@ -12,7 +12,7 @@ func main() {
 	// Mount Namespace 是Linux实现的第一个 namespace、因此系统调用参数是 NEWNS(New Namespace的缩写)
 	cmd := exec.Command("sh")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWNS,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 	}
 
 	cmd.Stdin = os.Stdin
