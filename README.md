@@ -5,6 +5,10 @@ This is a project to implement docker
 
 ### UTS NameSpace
 ### IPC NameSpace
+### PID NameSpace
+### Mount NameSpace
+### User NameSpace
+### Network NameSpace
 
 ## 2. cgroup demo
 
