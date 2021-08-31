@@ -5,6 +5,20 @@
 
 > linux kernel 3.8开始 非root进程也可以创建 user namespace、并且此用户在namespace中 可以被映射成root、而且在 namespace中有 root权限
 
+# CentOS 默认没有开启 user namespace、所以需要开启 user namespace
+
+```
+1. 设置
+# grubby --args="user_namespace.enable=1" --update-kernel="$(grubby --default-kernel)"
+
+2. 配置最大的 user namespace
+echo "user.max_user_namespaces=10000" >> /etc/sysctl.conf
+
+3. 重启服务器
+reboot
+```
+
+
 # Example
 
 ```sh
