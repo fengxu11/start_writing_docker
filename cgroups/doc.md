@@ -1,6 +1,6 @@
 # Linux  Cgroups
 
-> Cgroups的由来是 为了限制 一组进程及将来子进程 所能使用到的资源
+> Cgroups (Control Groups) 的由来是 为了限制 一组进程及将来子进程 所能使用到的资源
 
 > 这些资源包括 CPU、内存、存储、网络等、通过  Cgroups 可以很方便的限制某个进程的资源占用
 
@@ -36,4 +36,39 @@ apt-get install cgroup-bin
 
 
 ### hierarchy
+> hierarchy 的功能 是把一组 cgroup 串成一种树状的结构、一个这样的树便是一个 hierarchy、
+> 通过 hierarchy cgroups可以做到继承
 
+> 比如、系统对一组定时任务的进程通过 cgroup1 限制了CPU的使用率、然后其中有一个定时任务(一个进程)还需要限制
+> 磁盘IO、为了避免限制磁盘io 影响到了其他进程、这时创建一个 cgroup2 让其继承于cgroup1、这样 cgroup2
+> 使其继承于 cgroup1的 CPU使用率限制、并且增加了磁盘IO的限制、而不影响cgroup1中的其他进程
+
+
+### 三个组件之间的关系
+
+1. 系统创建了 hierarchy之后、系统中所有进程都会加入到 这个 hierarchy中的 cgroup根节点上、这个根节点是 hierarchy默认创建的
+2. 一个 subsystem 只能附加到一个 hierarchy
+3. 一个 hierarchy可以让 多个 subsystem附加上
+4. 一个进程 可以作为多个cgroup的成员、但是这些cgroup必须在 不同的 hierarchy中
+5. 一个进程 fork出子进程时、子进程和父进程在同一个cgroup中的、可以根据需要将子进程 移动到其他cgroup中的
+
+
+
+### Kernel接口、怎么调用 kernel才能配置 Cgroups呢？
+
+> 前面说过 cgroup中的 hierarchy是一种树状结构、kernel为了对cgroups的配置更加直观、
+> 是通过 一个虚拟的树状文件系统配置 Cgroups的、通过层级目录虚拟出cgroup树。
+
+1. 首先、创建并挂在一个 hierarchy(cgroup树) 
+
+2. 通过刚创建好的 hierarchy上 cgroup根节点中 扩展出的两个子 cgroup
+
+3. 在cgroup中 添加 和 移动进程
+
+4. 通过 subsystem限制 cgroup中进程的资源
+
+
+### docker 是如何使用 Cgroups 的？
+
+
+### 用Go语言实现 通过Cgroups 限制容器的资源
