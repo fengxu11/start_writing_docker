@@ -244,4 +244,22 @@ cpu.cfs_quota_us       cpu.stat           cpuacct.usage_percpu  cpuacct.usage_us
 
 
 ### 用Go语言实现 通过Cgroups 限制容器的资源
-> 查看 main.go
+
+1. 运行 main.go
+```
+[root@fengxu cgroups]# go run main.go 
+```
+
+
+2. 重新打开一个bash、使用top查看 刚才 shell 进程、可以看到 CPU没有超过30%
+
+```
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                
+ 8873 root      20   0   12700    252      0 R  30.0   0.0   0:02.96 sh         
+```
+
+3. 停止main.go之后、记得清除cgroup
+
+```
+[root@fengxu cpu]# cgdelete cpu:test_limit_cpu
+```
