@@ -59,13 +59,165 @@ apt-get install cgroup-bin
 > 前面说过 cgroup中的 hierarchy是一种树状结构、kernel为了对cgroups的配置更加直观、
 > 是通过 一个虚拟的树状文件系统配置 Cgroups的、通过层级目录虚拟出cgroup树。
 
+> 列出当前系统支持哪些 subsystem、如果没有 lssubsystem这个工具、可以使用这个命令安装
+>  ```yum install libcgroup-tools
+```
+[root@fengxu fengxu]# lssubsys -a
+cpuset
+cpu,cpuacct
+blkio
+memory
+devices
+freezer
+net_cls,net_prio
+perf_event
+hugetlb
+pids
+rdma
+```
+
 1. 首先、创建并挂在一个 hierarchy(cgroup树) 
+
+```
+
+# 创建一个 hierarchy 挂载点
+[root@fengxu]# mkdir cgroup-test
+
+# 挂载一个 hierarchy
+[root@fengxu]# sudo mount -t cgroup  -o none,name=cgroup-test cgroup-test  ./cgroup-test
+
+# 挂在后 就可以看到系统在这个目录下生成了、一些默认文件
+[root@fengxu]# ls ./cgroup-test
+cgroup.clone_children  cgroup.procs  cgroup.sane_behavior  notify_on_release  release_agent  tasks
+
+
+```
+> cgroup.clone_clhldren       cpuset的 subsystem 会读取这个配置文件、如果这个值是 1(默认是0)、
+> 子 cgroup才会继承父cgroup的cpuset配置
+
+> cgroup.procs 是树的当前节点cgroup中的进程组ID、现在的位置是在根节点、这个文件中会有现在系统中所有进程组的ID
+
+> notify_on_release 和 release_agent 会一起使用。  notify_on_release 标识当这个cgroup 最后一个进程退出的时候是否执行了 release_agent; release_agent 则是一个路径，通常用作进程退出之后自动清理掉不再使用 的cgroup
+
+> tasks 标识该cgroup 中的进程ID，如果把一个进程ID 写入到tasks文件中、便会将相应的进程加入到这个cgroup中
+
+
 
 2. 通过刚创建好的 hierarchy上 cgroup根节点中 扩展出的两个子 cgroup
 
+```
+# 在 刚创建好的 hierarchy上的cgroup根节点中创建两个 cgroup (也就是 在cgroup-test文件夹中创建)
+
+[root@fengxu cgroup-test]# sudo mkdir cgroup-1
+[root@fengxu cgroup-test]# sudo mkdir cgroup-2
+[root@fengxu cgroup-test]# tree
+.
+├── cgroup-1
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup-2
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup.clone_children
+├── cgroup.procs
+├── cgroup.sane_behavior
+├── notify_on_release
+├── release_agent
+└── tasks
+
+2 directories, 14 files
+
+
+# 可以看到、在一个 cgroup下创建文件夹 时、kernel会把文件夹标记为 这个cgroup的子cgroup、并继承他们的父属性
+```
+
+
 3. 在cgroup中 添加 和 移动进程
 
+```
+
+[root@fengxu cgroup-test]# echo $$
+18059
+
+# 进入到 cgroup-1中
+[root@fengxu cgroup-test]# cd cgroup-1/
+[root@fengxu cgroup-1]# ls
+cgroup.clone_children  cgroup.procs  notify_on_release  tasks
+
+# 将 当前所在的终端进程移动到 cgroup-1中
+[root@fengxu cgroup-1]# sudo sh -c "echo $$ >> tasks"
+
+
+# 查看终端进程 所在的 cgroup
+[root@fengxu cgroup-1]# cat /proc/18059/cgroup 
+13:name=cgroup-test:/cgroup-1
+12:rdma:/
+11:devices:/user.slice
+10:cpu,cpuacct:/user.slice
+9:blkio:/user.slice
+8:net_cls,net_prio:/
+7:perf_event:/
+6:hugetlb:/
+5:freezer:/
+4:memory:/user.slice/user-0.slice/session-10.scope
+3:cpuset:/
+2:pids:/user.slice/user-0.slice/session-10.scope
+1:name=systemd:/user.slice/user-0.slice/session-10.scope
+
+```
+
+
 4. 通过 subsystem限制 cgroup中进程的资源
+
+```
+
+# 在上面创建hierarchy的时候、并没有关联任何的 subsystem，所以没办法通过那个 hierarchy中的 cgroup节点限制进程的资源占用
+
+# 系统默认已经为每个 subsystem创建了一个hierarchy、比如  memory的hierarchy、查看一下
+# 可以看到 /sys/fs/cgrooup/memory 目录已经挂载到 memory subsystem的 hierarchy上面
+[root@fengxu cgroup-1]# mount | grep memory
+cgroup on /sys/fs/cgroup/memory type cgroup (rw,nosuid,nodev,noexec,relatime,memory)
+
+# 接下来的例子 就在这个 hierarchy中 创建cgroup、限制进程所使用的cpu
+
+# 1. 进入系统CPU的 hierarchy中、创建一个 cgroup
+[root@fengxu]# cd /sys/fs/cgroup/cpu
+
+[root@fengxu]# mkdir cgroups_test
+
+[root@fengxu cgroups_test]# ls
+cgroup.clone_children  cpuacct.usage_all          cpuacct.usage_sys   cpu.rt_period_us   notify_on_release
+cgroup.procs           cpuacct.usage_percpu       cpuacct.usage_user  cpu.rt_runtime_us  tasks
+cpuacct.stat           cpuacct.usage_percpu_sys   cpu.cfs_period_us   cpu.shares
+cpuacct.usage          cpuacct.usage_percpu_user  cpu.cfs_quota_us    cpu.stat
+
+# 2. 设置这个cgroup中的进程 只能使用20%的系统CPU资源
+[root@fengxu cgroups_test]# echo 20000 > cpu.cfs_quota_us
+
+# 3. 启动一个新的bash、运行一个程序、打满cpu
+[root@fengxu cgroups_test]# while : ; do : ; done &
+[1] 23682
+
+# 4. 把这个进程id、加入到这个cgroup中 
+[root@fengxu cgroups_test]# echo 23682 > tasks
+
+
+# 5. 使用 top 查看进程占用的cpu
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                      
+23682 root      20   0   26644   3128   1260 R  19.9   0.0   0:22.06 bash  
+
+可以看到 23682这个进程 CPU使用不会超过 20%
+
+为什么 20000代表的是 CPU使用率是20%呢？
+cpu.cfs_quota_us  表示cgroup限制占用的时间、单位是 微妙、默认为-1、
+设置为20000表示 20000/10000=20%的CPU
+
+```
+
 
 
 ### docker 是如何使用 Cgroups 的？
