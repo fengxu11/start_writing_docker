@@ -222,5 +222,26 @@ cpu.cfs_quota_us  表示cgroup限制占用的时间、单位是 微妙、默认�
 
 ### docker 是如何使用 Cgroups 的？
 
+> 先安装好docker 
+
+1. 启动一个nginx容器、并进入
+# docker run -it --cpus=".5" nginx /bin/sh
+# ls
+bin   dev                  docker-entrypoint.sh  home  lib64  mnt  proc  run   srv  tmp  var
+boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  sys  usr
+
+2. 进入cpu的cgroup中
+# cd /sys/fs/cgroup/cpu  
+# ls
+cgroup.clone_children  cpu.rt_period_us   cpuacct.stat          cpuacct.usage_percpu_sys   notify_on_release
+cgroup.procs           cpu.rt_runtime_us  cpuacct.usage         cpuacct.usage_percpu_user  tasks
+cpu.cfs_period_us      cpu.shares         cpuacct.usage_all     cpuacct.usage_sys
+cpu.cfs_quota_us       cpu.stat           cpuacct.usage_percpu  cpuacct.usage_user
+
+3. 查看CPU限制
+# cat cpu.cfs_quota_us
+50000
+
 
 ### 用Go语言实现 通过Cgroups 限制容器的资源
+> 查看 main.go
