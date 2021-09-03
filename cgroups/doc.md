@@ -243,7 +243,7 @@ cpu.cfs_quota_us       cpu.stat           cpuacct.usage_percpu  cpuacct.usage_us
 50000
 
 
-### 用Go语言实现 通过Cgroups 限制容器的资源
+### Go语言实现 限制进程的CPU资源
 
 1. 运行 main.go
 ```
